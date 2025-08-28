@@ -13,7 +13,7 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import AllEventsPage from './pages/AllEventsPage.jsx';
 import CreateEventPage from './pages/CreateEventPage.jsx';
 import EditEventPage from './pages/EditEventPage.jsx';
-
+import DashboardPage from './pages/DashboardPage.jsx';
 function App() {
   const navigate = useNavigate();
 
@@ -41,6 +41,7 @@ function App() {
           <Route path="/events" element={<AllEventsPage />} />
           <Route path="/create-event" element={<CreateEventPage />} />
           <Route path="/event/:eventId/edit" element={<EditEventPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
         </Routes>
       </main>
       <Footer />

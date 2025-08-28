@@ -1,9 +1,10 @@
+// src/pages/EventDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase.js';
-import { useAuth } from '../context/AuthContext.jsx';
-import toast from 'react-hot-toast'; // 👈 Import toast
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const EventDetailPage = () => {
     const { eventId } = useParams();
@@ -75,8 +76,10 @@ const EventDetailPage = () => {
                 setRegistrationId(null);
                 toast.success('Registration cancelled successfully!', { id: toastId });
             } else {
+                
                 const newRegistration = await addDoc(collection(db, 'registrations'), {
                     userId: currentUser.uid,
+                    userEmail: currentUser.email, // Save the user's email
                     eventId: eventId,
                     registrationDate: new Date()
                 });
@@ -95,7 +98,6 @@ const EventDetailPage = () => {
     const handleDelete = async () => {
         if (!isOrganizer) return;
 
-        // We use a custom confirmation toast instead of window.confirm
         toast((t) => (
             <span className="flex flex-col items-center gap-4">
                 Are you sure you want to delete this event?

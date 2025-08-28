@@ -1,24 +1,44 @@
+// src/pages/ProfilePage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { db } from '../firebase.js';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
+// A skeleton component for the event lists on this page
+const ProfileListSkeleton = () => (
+    <div className="space-y-4">
+        <div className="bg-white p-4 rounded-lg shadow-md animate-pulse">
+            <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md animate-pulse">
+            <div className="h-5 bg-gray-200 rounded w-2/3 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+        </div>
+    </div>
+);
+
+
 const ProfilePage = () => {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
     
     const [registeredEvents, setRegisteredEvents] = useState([]);
-    const [createdEvents, setCreatedEvents] = useState([]); // New state for events created by the user
+    const [createdEvents, setCreatedEvents] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchUserData = async () => {
-            if (!currentUser) return;
+            if (!currentUser) {
+                setLoading(false);
+                return;
+            };
 
             setLoading(true);
             try {
-                // --- Fetch Registered Events ---
+                // Fetch Registered Events
                 const registrationsQuery = query(collection(db, 'registrations'), where("userId", "==", currentUser.uid));
                 const registrationSnapshots = await getDocs(registrationsQuery);
                 const eventIds = registrationSnapshots.docs.map(doc => doc.data().eventId);
@@ -26,19 +46,15 @@ const ProfilePage = () => {
                 if (eventIds.length > 0) {
                     const eventPromises = eventIds.map(id => getDoc(doc(db, 'events', id)));
                     const eventDocs = await Promise.all(eventPromises);
-                    const registeredEventsData = eventDocs
-                        .filter(doc => doc.exists())
-                        .map(doc => ({ id: doc.id, ...doc.data() }));
-                    setRegisteredEvents(registeredEventsData);
+                    setRegisteredEvents(eventDocs.filter(doc => doc.exists()).map(doc => ({ id: doc.id, ...doc.data() })));
                 } else {
                     setRegisteredEvents([]);
                 }
 
-                // --- Fetch Created Events ---
+                // Fetch Created Events
                 const createdEventsQuery = query(collection(db, 'events'), where("organizerId", "==", currentUser.uid));
                 const createdEventsSnapshot = await getDocs(createdEventsQuery);
-                const createdEventsData = createdEventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setCreatedEvents(createdEventsData);
+                setCreatedEvents(createdEventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
             } catch (error) {
                 console.error("Error fetching user data: ", error);
@@ -59,15 +75,12 @@ const ProfilePage = () => {
         }
     };
 
-    if (loading && !currentUser) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <p>Loading profile...</p>
-            </div>
-        );
+    if (!currentUser && !loading) {
+        // Redirect if not logged in and not loading
+        navigate('/login');
+        return null;
     }
 
-    // A small component for the list items to reduce repetition
     const EventListItem = ({ event }) => (
         <Link to={`/event/${event.id}`} className="block bg-white p-4 rounded-lg shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div className="flex justify-between items-center">
@@ -114,7 +127,7 @@ const ProfilePage = () => {
                     Your Registered Events
                 </h2>
                 {loading ? (
-                    <p className="text-center text-gray-500">Loading your events...</p>
+                    <ProfileListSkeleton />
                 ) : registeredEvents.length > 0 ? (
                     <div className="space-y-4">
                         {registeredEvents.map(event => <EventListItem key={event.id} event={event} />)}
@@ -134,7 +147,7 @@ const ProfilePage = () => {
                     Events You've Created
                 </h2>
                 {loading ? (
-                    <p className="text-center text-gray-500">Loading your created events...</p>
+                    <ProfileListSkeleton />
                 ) : createdEvents.length > 0 ? (
                     <div className="space-y-4">
                         {createdEvents.map(event => <EventListItem key={event.id} event={event} />)}
